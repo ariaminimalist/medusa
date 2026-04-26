@@ -1,9 +1,4 @@
-const stats = [
-  { main: "2,300", accent: "+", label: "Happy Customers" },
-  { main: "4.9", accent: "★", label: "Average Rating" },
-  { main: "30", accent: "-day", label: "Money-Back Guarantee" },
-  { main: "15", accent: "min", label: "Daily for Relief" },
-]
+import type { StatItem } from "@content/homepage/types"
 
 const borderClass = [
   "border-r border-b border-gray-100 md:border-b-0",
@@ -12,7 +7,7 @@ const borderClass = [
   "",
 ]
 
-const StatsBar = () => (
+const StatsBar = ({ stats }: { stats: StatItem[] }) => (
   <section style={{ borderTop: "1px solid #E2EAF4", borderBottom: "1px solid #E2EAF4", background: "#fff" }}>
     <div className="grid grid-cols-2 md:grid-cols-4" style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
       {stats.map((s, i) => (

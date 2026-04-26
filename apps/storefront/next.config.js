@@ -13,6 +13,9 @@ const S3_PATHNAME = process.env.MEDUSA_CLOUD_S3_PATHNAME
  */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    serverActions: { allowedOrigins: ["10.0.1.124:8000"] },
+  },
   logging: {
     fetches: {
       fullUrl: true,
