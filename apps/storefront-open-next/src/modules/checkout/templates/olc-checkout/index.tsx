@@ -17,9 +17,9 @@ import type {
   OnApproveData,
 } from "@paypal/paypal-js"
 import { PayPalButtons as PayPalButtonsComponent } from "@paypal/react-paypal-js"
-import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import { ExpressCheckoutElement, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 /* ─── types ────────────────────────────────────────────────── */
 
@@ -170,6 +170,9 @@ export default function OlcCheckout({
   const [selectedMethod, setSelectedMethod] = useState(
     stripeMethod?.id || paypalMethod?.id || manualMethod?.id || ""
   )
+  const [visualMethod, setVisualMethod] = useState<"card" | "google_pay">("card")
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -195,6 +198,51 @@ export default function OlcCheckout({
         const secret = session?.data?.client_secret as string | undefined
         if (secret) setClientSecret(secret)
       } catch {}
+    }
+  }
+
+  /* ── Google Pay express confirm ── */
+  const handleExpressConfirm = async () => {
+    if (!stripe || !elements) return
+    setIsLoading(true)
+    try {
+      await prepareCart()
+
+      let secret = clientSecret
+      if (!secret) {
+        const result = await initiatePaymentSession(cart, { provider_id: selectedMethod })
+        const session = result?.payment_collection?.payment_sessions?.find(
+          (s: { status: string }) => s.status === "pending"
+        )
+        secret = session?.data?.client_secret as string | undefined
+        if (secret) setClientSecret(secret)
+      }
+
+      if (!secret) {
+        setError("Could not initiate payment session.")
+        setIsLoading(false)
+        return
+      }
+
+      const { error } = await stripe.confirmPayment({
+        elements,
+        clientSecret: secret,
+        confirmParams: {
+          return_url: `${window.location.origin}/${countryCode}/order/confirmed`,
+        },
+        redirect: "if_required",
+      })
+
+      if (error) {
+        setError(error.message || "Google Pay payment failed.")
+        setIsLoading(false)
+        return
+      }
+
+      await placeOrder()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setIsLoading(false)
     }
   }
 
@@ -368,7 +416,7 @@ export default function OlcCheckout({
   const placeOrderDisabled =
     isLoading ||
     !termsAccepted ||
-    (isStripeSelected && !cardComplete)
+    (isStripeSelected && !cardComplete && visualMethod !== "google_pay")
 
   /* ══════════════════════════════════════════════════════════ */
   /*  RENDER                                                    */
@@ -434,11 +482,27 @@ export default function OlcCheckout({
           <fieldset>
             <legend className="banner-title">Express Checkout</legend>
             <ul className="wc_stripe_checkout_banner_gateways">
-              {/* Apple Pay – full width */}
-              <li style={{ display: "list-item" }}>
-                <ApplePayButton />
-              </li>
-              {/* PayPal express – full width */}
+              {/* Google Pay / Apple Pay via Stripe ExpressCheckoutElement */}
+              {stripeMethod && mounted && (
+                <li style={{ display: "list-item" }}>
+                  <ExpressCheckoutElement
+                    onConfirm={handleExpressConfirm}
+                    onReady={({ availablePaymentMethods }) => {
+                      console.log("Express checkout available methods:", availablePaymentMethods)
+                    }}
+                    options={{
+                      paymentMethods: {
+                        googlePay: "always",
+                        applePay: "always",
+                        link: "never",
+                        amazonPay: "never",
+                      },
+                      buttonHeight: 46,
+                    }}
+                  />
+                </li>
+              )}
+              {/* PayPal express */}
               {paypalMethod && (
                 <li style={{ display: "list-item" }}>
                   <PayPalButtonsComponent
@@ -716,8 +780,8 @@ export default function OlcCheckout({
                       type="radio"
                       name="payment_method"
                       value={stripeMethod.id}
-                      checked={isStripeSelected}
-                      onChange={() => handleMethodSelect(stripeMethod.id)}
+                      checked={isStripeSelected && visualMethod === "card"}
+                      onChange={() => { setVisualMethod("card"); handleMethodSelect(stripeMethod.id) }}
                       className="accent-gray-800"
                     />
                     <span className="text-sm font-medium text-gray-800">
@@ -731,7 +795,7 @@ export default function OlcCheckout({
                   </div>
                 </label>
 
-                {isStripeSelected && (
+                {isStripeSelected && visualMethod === "card" && (
                   <div className="mt-3 ml-5">
                     <a
                       href="https://link.co"
@@ -750,7 +814,7 @@ export default function OlcCheckout({
               </div>
             )}
 
-            {/* Google Pay (visual — handled by PaymentElement internally) */}
+            {/* Google Pay (handled by PaymentElement internally) */}
             {stripeMethod && (
               <div className="px-4 py-3">
                 <label className="flex items-center justify-between cursor-pointer">
@@ -759,8 +823,8 @@ export default function OlcCheckout({
                       type="radio"
                       name="payment_method"
                       value="google_pay"
-                      checked={false}
-                      onChange={() => handleMethodSelect(stripeMethod.id)}
+                      checked={isStripeSelected && visualMethod === "google_pay"}
+                      onChange={() => { setVisualMethod("google_pay"); handleMethodSelect(stripeMethod.id) }}
                       className="accent-gray-800"
                     />
                     <span className="text-sm font-medium text-gray-800">
@@ -769,6 +833,11 @@ export default function OlcCheckout({
                   </div>
                   <GPay />
                 </label>
+                {isStripeSelected && visualMethod === "google_pay" && (
+                  <p className="mt-2 ml-5 text-xs text-gray-500">
+                    Use the Google Pay button above to complete your order.
+                  </p>
+                )}
               </div>
             )}
 
