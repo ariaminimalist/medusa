@@ -54,3 +54,21 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 **/.DS_Store
+
+# pnpm store
+.pnpm-store/
+
+# Lock files (using pnpm only)
+package-lock.json
+yarn.lock
+
+# Claude Code
+.claude/
+
+# Screenshots / temp files
+*.png
+*.jpg
+*.jpeg
+!apps/storefront/public/**
+!apps/storefront-open-next/public/**
+!apps/backend/src/**

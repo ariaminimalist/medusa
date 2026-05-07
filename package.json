@@ -24,7 +24,16 @@
     }
   },
   "devDependencies": {
-    "turbo": "^2.0.14",
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.14"
+  },
+  "dependencies": {
+    "@medusajs/payment-stripe": "^2.14.1",
+    "@paypal/paypal-js": "^9.6.0",
+    "@paypal/react-paypal-js": "^9.1.1",
+    "@react-email/components": "0.0.34",
+    "@rsc-labs/medusa-paypal-payment": "^0.0.2",
+    "@sanity/client": "^7.22.0",
+    "resend": "^4.8.0"
   }
 }

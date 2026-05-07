@@ -26,8 +26,6 @@ services:
       - medusa_network
 
   # Medusa Server
-  # This service runs the Medusa backend application
-  # and the admin dashboard.
   medusa:
     build: .
     container_name: medusa_backend
@@ -46,15 +44,17 @@ services:
       - apps/backend/.env
     volumes:
       - .:/server
-      - /server/node_modules
-      - /server/apps/backend/node_modules
+      - backend_node_modules:/server/node_modules
+      - backend_app_node_modules:/server/apps/backend/node_modules
     networks:
       - medusa_network
 
   # Storefront
-  # This service runs the Next.js storefront.
   storefront:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: my-medusa-store-storefront
     container_name: medusa_storefront
     restart: unless-stopped
     depends_on:
@@ -67,16 +67,20 @@ services:
       - apps/storefront/.env
     volumes:
       - .:/server
-      - /server/node_modules
-      - /server/apps/backend/node_modules
-      - /server/apps/storefront/node_modules
-      - /server/apps/storefront/.next
+      - storefront_node_modules:/server/node_modules
+      - storefront_app_node_modules:/server/apps/storefront/node_modules
+      - storefront_next:/server/apps/storefront/.next
     entrypoint: ["./start-storefront.sh"]
     networks:
       - medusa_network
 
 volumes:
   postgres_data:
+  backend_node_modules:
+  backend_app_node_modules:
+  storefront_node_modules:
+  storefront_app_node_modules:
+  storefront_next:
 
 networks:
   medusa_network:

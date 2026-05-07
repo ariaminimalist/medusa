@@ -2,7 +2,9 @@
 .env
 .DS_Store
 /uploads
+/static
 /node_modules
+package-lock.json
 yarn-error.log
 
 .idea
