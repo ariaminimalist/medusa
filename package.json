@@ -28,7 +28,7 @@
     "turbo": "^2.0.14"
   },
   "dependencies": {
-    "@medusajs/payment-stripe": "^2.14.1",
+    "@medusajs/payment-stripe": "^2.21.2",
     "@paypal/paypal-js": "^9.6.0",
     "@paypal/react-paypal-js": "^9.1.1",
     "@react-email/components": "0.0.34",
